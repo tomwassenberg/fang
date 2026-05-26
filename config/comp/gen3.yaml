@@ -19,7 +19,7 @@ ota:
 
 esphome:
   name: ${name}
-  project: 
+  project:
     name: philip2809.neato-brainslug
     version: ${buildinfo}
 
@@ -82,24 +82,24 @@ script:
 
   - id: get_all_data
     mode: queued
-    then: 
-      - uart.write: "GetErr \n"  
-      - delay: 50ms  
-      - uart.write: "GetState \n"    
-      - delay: 50ms  
-      - uart.write: "GetCharger \n"    
-      - delay: 50ms  
-      - uart.write: "GetUserSettings \n"  
+    then:
+      - uart.write: "GetErr \n"
+      - delay: 50ms
+      - uart.write: "GetState \n"
+      - delay: 50ms
+      - uart.write: "GetCharger \n"
+      - delay: 50ms
+      - uart.write: "GetUserSettings \n"
       - delay: 50ms
       - uart.write: "GetWarranty \n"
-      - delay: 50ms  
+      - delay: 50ms
       - uart.write: "TestMode \n"
-      - delay: 50ms  
-      - uart.write: "GetVersion \n"    
-  
+      - delay: 50ms
+      - uart.write: "GetVersion \n"
+
   - id: initial_data_get # when the robot has booted, run this initial fetch after 5 seconds of being able to send commands, the 5 sec needed to the robot can calculate battery level etc.
     mode: queued
-    then: 
+    then:
       - delay: 5sec
       - script.execute: get_all_data
 
@@ -121,7 +121,7 @@ script:
       - uart.write: "SetSystemMode PowerCycle \n"
 
   - id: cleaning_stopped
-    then: 
+    then:
       - lambda: !lambda |-
           uint64_t now_ts = id(nbs_time).now().timestamp;
           uint64_t start_ts = id(g_last_cleaning_start_time);
@@ -200,7 +200,7 @@ interval:
       - uart.write: "GetErr \n"
       - uart.write: "GetState \n"
   - interval: ${chargerinterval}
-    then: 
+    then:
       - uart.write: "GetCharger \n"
 
 
@@ -331,8 +331,8 @@ uart:
               else if (key == "BattTempCAvg") id(chargerBattTempCAvg).publish_state(atof(value.c_str()));
               else if (key == "VBattV") id(chargerVBattV).publish_state(atof(value.c_str()));
               else if (key == "VExtV") id(chargerVExtV).publish_state(atof(value.c_str()));
-              else if (key == "Charger_mAH") id(chargerCharger_mAH).publish_state(atof(value.c_str()));
-              else if (key == "Discharge_mAH") id(chargerDischarge_mAH).publish_state(atof(value.c_str()));
+              else if (key == "Charger_mAH") id(chargerCharger_mA).publish_state(atof(value.c_str()));
+              else if (key == "Discharge_mAH") id(chargerDischarge_mA).publish_state(atof(value.c_str()));
             }
           }
 
@@ -354,7 +354,7 @@ uart:
                   // Trim whitespace
                   trim(key);
                   trim(value);
-                  
+
                   if (key == "CumulativeBatteryCycles") {
                       uint32_t cycles = hex_to_uint32(value);
                       id(batteryCycles).publish_state(cycles);
@@ -380,8 +380,8 @@ uart:
           else if (command == "TestMode") {
             if (lines[1].find(": On") != std::string::npos) id(testMode).publish_state(true);
             else if (lines[1].find(": Off") != std::string::npos) id(testMode).publish_state(false);
-          } 
-          
+          }
+
           else if (command == "GetState") {
               std::string &states_line = lines[1];  // "Current UI State is: ...\nCurrent Robot State is: ...\n\x1A"
 
@@ -439,7 +439,7 @@ uart:
               // Extract Robot state
               if (robot_line.find(prefix_robot) == 0) {
                   std::string robot_state = robot_line.substr(strlen(prefix_robot));
-                  
+
                   // Remove trailing \x1A if present
                   size_t ctrl_z = robot_state.find('\x1A');
                   if (ctrl_z != std::string::npos) {
@@ -447,7 +447,7 @@ uart:
                   }
 
                   trim(robot_state);
-                  
+
                   id(robotState).publish_state(robot_state.c_str());
               }
           }
@@ -480,18 +480,18 @@ uart:
                 else if (key == "Filter Change Time (seconds)") id(filterChangeTime).publish_state(atof(value.c_str()));
                 else if (key == "Brush Change Time (seconds)") id(brushChangeTime).publish_state(atof(value.c_str()));
                 else if (key == "Dirt Bin Alert Reminder Interval (minutes)") id(dirtBinAlertReminder).publish_state(atof(value.c_str()));
-              } 
+              }
               // ---- Special lines without commas ----
               else if (line.find("Current Dirt Bin Runtime is:") == 0) {
                 std::string val = line.substr(strlen("Current Dirt Bin Runtime is:"));
                 trim(val);
                 id(currentDirtBinRuntime).publish_state(atof(val.c_str()));
-              } 
+              }
               else if (line.find("Number of Cleanings where Dust Bin was Full is:") == 0) {
                 std::string val = line.substr(strlen("Number of Cleanings where Dust Bin was Full is:"));
                 trim(val);
                 id(numberDustBinFull).publish_state(atof(val.c_str()));
-              } 
+              }
             }
           } else if (command.find("ARCHES Board") != std::string::npos) id(uiState).publish_state("Starting...");
 
@@ -609,36 +609,42 @@ sensor:
     id: chargerFuelPercent
     name: "Fuel Percent"
     unit_of_measurement: "%"
+    device_class: "battery"
 
   - platform: template
     id: chargerBattTempCAvg
     name: "Battery Temp C Avg"
     unit_of_measurement: "°C"
     entity_category: "diagnostic"
+    device_class: "temperature"
 
   - platform: template
     id: chargerVBattV
     name: "Battery Voltage V"
     unit_of_measurement: "V"
     entity_category: "diagnostic"
+    device_class: "voltage"
 
   - platform: template
     id: chargerVExtV
     name: "External Voltage V"
     unit_of_measurement: "V"
     entity_category: "diagnostic"
+    device_class: "voltage"
 
   - platform: template
-    id: chargerCharger_mAH
-    name: "Charger mAh"
-    unit_of_measurement: "mAh"
+    id: chargerCharger_mA
+    name: "Charger mA"
+    unit_of_measurement: "mA"
     entity_category: "diagnostic"
+    device_class: "power"
 
   - platform: template
-    id: chargerDischarge_mAH
-    name: "Discharge mAh"
-    unit_of_measurement: "mAh"
+    id: chargerDischarge_mA
+    name: "Discharge mA"
+    unit_of_measurement: "mA"
     entity_category: "diagnostic"
+    device_class: "power"
 
   # --- GetUserSettings ---
   - platform: template
@@ -646,24 +652,28 @@ sensor:
     id: filterChangeTime
     unit_of_measurement: "s"
     entity_category: "diagnostic"
+    device_class: "duration"
 
   - platform: template
     name: "Brush Change Time"
     id: brushChangeTime
     unit_of_measurement: "s"
     entity_category: "diagnostic"
+    device_class: "duration"
 
   - platform: template
     name: "Dirt Bin Alert Reminder"
     id: dirtBinAlertReminder
     unit_of_measurement: "min"
     entity_category: "diagnostic"
+    device_class: "duration"
 
   - platform: template
     name: "Current Dirt Bin Runtime"
     id: currentDirtBinRuntime
     unit_of_measurement: "s"
     entity_category: "diagnostic"
+    device_class: "duration"
 
   - platform: template
     name: "Number of Full Dust Bin Cleanings"
@@ -683,6 +693,7 @@ sensor:
     name: "Last cleaning duration"
     id: last_cleaning_duration
     unit_of_measurement: "min"
+    device_class: "duration"
 
 
 binary_sensor:
@@ -691,17 +702,20 @@ binary_sensor:
     id: usbConnected
     name: "USB Connected"
     entity_category: "diagnostic"
+    device_class: "connectivity"
 
   # --- GetCharger ---
   - platform: template
     id: chargerBatteryOverTemp
     name: "Battery Over Temp"
     entity_category: "diagnostic"
+    device_class: "safety"
 
   - platform: template
     id: chargerChargingActive
     name: "Charging Active"
     entity_category: "diagnostic"
+    device_class: "battery_charging"
 
   - platform: template
     id: chargerChargingEnabled
@@ -717,6 +731,7 @@ binary_sensor:
     id: chargerOnReservedFuel
     name: "On Reserved Fuel"
     entity_category: "diagnostic"
+    device_class: "battery"
 
   - platform: template
     id: chargerEmptyFuel
@@ -727,11 +742,13 @@ binary_sensor:
     id: chargerBatteryFailure
     name: "Battery Failure"
     entity_category: "diagnostic"
+    device_class: "problem"
 
   - platform: template
     id: chargerExtPwrPresent
     name: "Ext Power Present"
     entity_category: "diagnostic"
+    device_class: "connectivity"
 
   - platform: template
     id: chargerThermistorPresent
@@ -743,6 +760,7 @@ text_sensor:
   - platform: template
     id: nbs_time_text
     name: "NBS Time"
+    device_class: "timestamp"
     lambda: !lambda |-
       char buf[10];
       auto t = id(nbs_time).now();
@@ -753,6 +771,8 @@ text_sensor:
   - platform: template
     name: "Last cleaning time"
     id: last_cleaning_time
+    # Not a valid timestamp for HA, missing timezone information
+    # device_class: "timestamp"
 
   - platform: template
     name: "Last cleaning type"
@@ -772,7 +792,7 @@ text_sensor:
     id: robotSerial
     name: "Serial Number"
     entity_category: "diagnostic"
-    on_value: 
+    on_value:
       then:
         - lambda: !lambda |-
             // Get the mac address, abort  if the serial is malformed
@@ -993,6 +1013,7 @@ number:
     max_value: 400
     step: 1
     unit_of_measurement: cm
+    device_class: "distance"
     mode: SLIDER
     name: Spot Clean Width
     optimistic: true
@@ -1003,6 +1024,7 @@ number:
     max_value: 400
     step: 1
     unit_of_measurement: cm
+    device_class: "distance"
     mode: SLIDER
     name: Spot Clean Height
     optimistic: true
@@ -1102,8 +1124,9 @@ button:
   - platform: template
     name: "Locate Robot"
     icon: mdi:volume-high
+    device_class: "identify"
     on_press:
-      - uart.write: "PlaySound SoundId 20 \n"  
+      - uart.write: "PlaySound SoundId 20 \n"
 
   - platform: template
     name: "Manual Drive Forward Up"
@@ -1221,7 +1244,7 @@ button:
     name: "Update status"
     icon: mdi:refresh
     on_press:
-      - script.execute: get_all_data 
+      - script.execute: get_all_data
     entity_category: "diagnostic"
 
   - platform: template
@@ -1236,14 +1259,15 @@ button:
     name: "Shutdown"
     icon: mdi:power
     on_press:
-      - script.execute: robotShutdown 
+      - script.execute: robotShutdown
     entity_category: "diagnostic"
 
   - platform: template
     name: "PowerCycle"
     icon: mdi:restart
+    device_class: "restart"
     on_press:
-      - script.execute: powercycle 
+      - script.execute: powercycle
     entity_category: "diagnostic"
 
   - platform: restart
