@@ -5,7 +5,7 @@ window.apiBasePath = getBasePath();
 
 
 export function restAction(entity: entityConfig, action: string) {
-    fetch(`${window.apiBasePath}/${entity.domain}/${entity.id}/${action}`, {
+    fetch(`${window.apiBasePath}/${entity.domain}/${entity.name}/${action}`, {
         method: "POST",
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
