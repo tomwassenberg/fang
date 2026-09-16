@@ -15,7 +15,7 @@ wifi:
 
 ota:
   - platform: esphome
-    password: ${ota_password}
+    encryption:
 
 esphome:
   name: ${name}
